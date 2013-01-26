@@ -10,11 +10,39 @@ class MoviesController < ApplicationController
   end
   
   def index
+	puts "1:" +  params.inspect
 	@all_ratings = get_all_ratings()
+	updated = false
 	
-	ratings = @all_ratings
-	if (params["ratings"] != nil) then
-		ratings = params["ratings"].keys 
+	if (params[:ratings] == nil || params[:ratings].length == 0) then
+		if (session[:ratings] != nil && session[:ratings].length > 0) then
+			params[:ratings] = session[:ratings];
+			updated = true
+		else 
+			params[:ratings] = Hash.new();
+			@all_ratings.each do |rating| 
+				params[:ratings][rating] = 1
+			end
+		end
+	end	
+	
+	if (params[:ratings].is_a?(Hash)) then
+		ratings = params[:ratings].keys
+	else
+		ratings = params[:ratings]
+	end
+	
+	if (params[:sort] == nil && session[:sort] != nil) then 
+		params[:sort] = session[:sort]
+		updated = true
+	end
+	
+	if (updated) then
+		session[:sort] = params[:sort]
+		session[:ratings] = params[:ratings]
+		flash.keep()
+		puts "2:" + params.inspect
+		redirect_to params.merge(:action => "index")
 	end
 	
 	if params[:sort] == "title" then
@@ -25,12 +53,8 @@ class MoviesController < ApplicationController
 		@movies = Movie.where(:rating => ratings)
 	end
 	
-	if (params["ratings"] == nil) then
-		params["ratings"] = Hash.new();
-		@all_ratings.each do |rating|
-			params["ratings"][rating] = 1;
-		end
-	end
+	session[:sort] = params[:sort];
+	session[:ratings] = params[:ratings];
   end
 
   def new
