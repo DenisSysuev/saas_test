@@ -1,22 +1,35 @@
 class MoviesController < ApplicationController
 
+  def get_all_ratings
+	return Movie.select("DISTINCT rating").map(&:rating)
+  end
+  
   def show
 	id = params[:id] # retrieve movie ID from URI route
-	if (id =~ /^[-+]?[0-9]+$/) then
-		@movie = Movie.find(id) # look up movie by unique ID
-	else 
-	    session[:sort] = params[:id]
-		redirect_to movies_path
-	end
+	@movie = Movie.find(id) # look up movie by unique ID	
   end
   
   def index
-	if session[:sort] == "title_header" then
-		@movies = Movie.order("title").all
-	elsif session[:sort] == "release_date_header" then
-		@movies = Movie.order("release_date").all
+	@all_ratings = get_all_ratings()
+	
+	ratings = @all_ratings
+	if (params["ratings"] != nil) then
+		ratings = params["ratings"].keys 
+	end
+	
+	if params[:sort] == "title" then
+		@movies = Movie.where(:rating => ratings).order("title")
+	elsif params[:sort] == "release_date" then
+		@movies = Movie.where(:rating => ratings).order("release_date")
 	else 
-		@movies = Movie.all
+		@movies = Movie.where(:rating => ratings)
+	end
+	
+	if (params["ratings"] == nil) then
+		params["ratings"] = Hash.new();
+		@all_ratings.each do |rating|
+			params["ratings"][rating] = 1;
+		end
 	end
   end
 
